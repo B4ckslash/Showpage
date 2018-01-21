@@ -1,0 +1,3 @@
+/* Version Config */
+#define ShowPage_VERSION_MAJOR @ShowPage_VERSION_MAJOR@
+#define ShowPage_VERSION_MINOR @ShowPage_VERSION_MINOR@
