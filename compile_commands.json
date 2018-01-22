@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/marcus/git/Showpage/src",
+  "command": "/usr/bin/cc  -I/home/marcus/git/Showpage/lib    -o CMakeFiles/ShowPage.dir/showpage.c.o   -c /home/marcus/git/Showpage/src/showpage.c",
+  "file": "/home/marcus/git/Showpage/src/showpage.c"
+}
+]
