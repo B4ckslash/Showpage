@@ -13,10 +13,10 @@ struct pagelist{
                 } start;
 
 
-void openPage(xmlTextReaderPtr reader)
+void openPage(const xmlTextReaderPtr reader)
 {
-    const unsigned char *content = xmlTextReaderConstValue(reader);
-    if(xmlTextReaderHasValue(reader)){
+    const unsigned char *content = xmlTextReaderReadString(reader);
+    if(xmlTextReaderHasValue(reader) && *content && *content != '\n'){
         fprintf(stdout, "Read %s\n", content);
     }
 }
@@ -47,6 +47,6 @@ int main(int argc, char *argv[])
     /*    fprintf(stdout, "%s Version %d.%d\n",
             argv[0],
             ShowPage_VERSION_MAJOR,
-            ShowPage_VERSION_MINOR);
-    return 0;*/
+            ShowPage_VERSION_MINOR);*/
+    return 0;
 }
