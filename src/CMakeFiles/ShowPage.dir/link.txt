@@ -1,1 +1,0 @@
-/usr/bin/cc   -rdynamic CMakeFiles/ShowPage.dir/showpage.c.o  -o ShowPage  -L/home/marcus/git/showpage_c/src 
