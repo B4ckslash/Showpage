@@ -8,3 +8,4 @@ src/CMakeCache.txt
 src/Makefile
 src/cmake_install.cmake
 lib/
+ShowPageConf.h

@@ -1,7 +1,7 @@
 [
 {
-  "directory": "/home/marcus/git/Showpage/src",
-  "command": "/usr/bin/cc  -I/home/marcus/git/Showpage/lib    -o CMakeFiles/ShowPage.dir/showpage.c.o   -c /home/marcus/git/Showpage/src/showpage.c",
-  "file": "/home/marcus/git/Showpage/src/showpage.c"
+  "directory": "/home/marcus/git/showpage_c/src",
+  "command": "/usr/bin/cc  -I/home/marcus/git/showpage_c/lib    -o CMakeFiles/ShowPage.dir/showpage.c.o   -c /home/marcus/git/showpage_c/src/showpage.c",
+  "file": "/home/marcus/git/showpage_c/src/showpage.c"
 }
 ]

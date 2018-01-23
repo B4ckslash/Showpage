@@ -6,12 +6,6 @@
 #include <signal.h>
 #include <string.h>
 
-/*typedef struct pagelist *ptr;
-struct pagelist{
-                ptr prev;
-                int ID;
-                ptr next;
-                } start;*/
 
 int recvd_sig = 0;
 
@@ -39,24 +33,50 @@ int main(int argc, char *argv[])
     pid_t pid_cserver;
     pid_t pid_chrm;
     pid_t pid_pagec;
-    /*if(argc != 2){
-        fprintf(stdout, "Usage: %s (start | stop | restart)\n", argv[0]);
-        return 0;
-    }*/
+    /*declare pipe file descriptor for communication between child and parent */
+    int pipefd[2];
+    pipe(pipefd);
+
+    /*Fork and exec calls*/
     if((pid_cserver = fork()) < 0){
         perror("Could not fork process for chromix server");
-        return 1;
+        goto term_routine;
     }else if(pid_cserver == 0){
+        /*
+         * Execution branch of child process for chromix-too-server
+         *
+         * The pipe declared earlier is used to redirect stdout of the child process
+         * This is so that the opening of URLs can be held off until chromix has
+         * established a connection with chromium.
+         */
         fprintf(stdout, "Starting chromix-too-server with PID %d\n", getpid());
+        fprintf(stdout, "Redirecting stdout of process %d to pipe to process %d\n", getpid(), getppid());
+ 
+        /*close read end of pipe*/
+        if(close(pipefd[0]) < 0){
+            perror("Could not close read end of pipe");
+            goto term_routine;
+        }
+        /*actually redirect stdout to pipe*/
+        if(dup2(pipefd[1], STDOUT_FILENO) < 0){
+            perror("Could not redirect stdout to pipe");
+            goto term_routine;
+        }
+
         char *cserver_path ="/usr/local/bin/chromix-too-server";
         char *const argv_cserver[] = {cserver_path, NULL};
         execv(cserver_path, argv_cserver);
     }
 
+    /*immediately close fd for the write end of the pipe if parent*/
+    if(close(pipefd[1]) < 0){
+        perror("Could not close write end of pipe");
+        goto term_routine;
+    }
+
     if((pid_chrm = fork()) < 0){
         perror("Could not fork process for chrome");
-        kill(pid_cserver, SIGTERM);
-        return 1;
+        goto term_routine;
     }else if(pid_chrm == 0){
         fprintf(stdout, "Forking process for chrome with PID %d\n", getpid());
         char *chrm_path="/usr/bin/chromium-browser";
@@ -66,18 +86,20 @@ int main(int argc, char *argv[])
 
     /* TODO: Add pagecycling functionality and spawn the cycler as a child process(preferably after pages have been opened)*/
 
-    char buf[LINE_MAX];
-    int websck_conn = 0;
-    while(!websck_conn){
-        /*TODO: fgets cannot read stdout, find another way*/
-        if(fgets(buf, sizeof(buf), stdout) != NULL){
-            if(strstr(buf, "websocket client connected") != NULL){
-                websck_conn = 1;
+    /*Wait till chromix server connects so that the open command of chromix-too does not fail*/
+    {
+        char buf[250];
+        int websck_conn = 0;
+        FILE *pipe_fp = fdopen(pipefd[0], "r");
+        while(!websck_conn){
+            if(fgets(buf, sizeof(buf), pipe_fp) != NULL){
+                if(strstr(buf, "websocket client connected") != NULL){
+                    websck_conn = 1;
+                }
             }
+            memset(buf,0, sizeof(buf));
+        sleep(1);
         }
-        fprintf(stdout, "%s", buf);
-        memset(buf,0, sizeof(buf));
-    sleep(1);
     }
 
     xmlTextReaderPtr reader;
@@ -87,6 +109,7 @@ int main(int argc, char *argv[])
 
     if (reader == NULL) {
         fprintf(stderr, "Cannot open document \n");
+        goto term_routine;
         return 1;
     }
     ret = xmlTextReaderRead(reader);
@@ -101,12 +124,9 @@ int main(int argc, char *argv[])
         sleep(1);
     }
 
-    kill(pid_chrm, SIGTERM);
-    kill(pid_cserver, SIGTERM);
+term_routine:
+        kill(pid_chrm, SIGTERM);
+        kill(pid_cserver, SIGTERM);
 
-    /*    fprintf(stdout, "%s Version %d.%d\n",
-            argv[0],
-            ShowPage_VERSION_MAJOR,
-            ShowPage_VERSION_MINOR);*/
     return 0;
 }

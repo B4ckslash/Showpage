@@ -17,4 +17,5 @@ configure_file (
     "${PROJECT_BINARY_DIR}/lib/ShowPageConf.h"
     )
 add_executable(ShowPage showpage.c)
+add_executable(pagecycle pagecycle.c)
 target_link_libraries(ShowPage ${LIBXML2_LIBRARIES})
