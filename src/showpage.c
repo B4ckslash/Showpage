@@ -12,7 +12,7 @@ int recvd_sig = 0;
 void openPage(const xmlTextReaderPtr reader, FILE *fp)
 {
     const unsigned char *content = xmlTextReaderReadString(reader);
-    if(xmlTextReaderHasValue(reader) && *content && *content != '\n'){
+    if(xmlTextReaderHasValue(reader) && *content != '\n'){
         fprintf(stdout, "Read %s\n", content);
         fprintf(fp, "%s ", content);
     }
@@ -101,18 +101,23 @@ pid_t fork_pagec()
     pid_t pid;
     FILE *fp = popen("chromix-too tid", "r");
     char IDs[50];
-    char buf[2];
+    char buf[3];
     while(fgets(buf, sizeof(buf), fp) != NULL){
+        char *pos;
+        while((pos=strchr(buf, '\n')) != NULL)
+            *pos = '\0';
         strcat(IDs, buf);
-        strcat(IDs, ",");
-        memset(buf, '\0', sizeof(buf));
+        strcat(IDs, ",\0");
+        /*memset(buf, 0, sizeof(buf));*/
     }
+    pclose(fp);
+
     if((pid = fork()) < 0){
         perror("Could not fork process for pagecycler");
         return 1;
     }else if(pid == 0){
         fprintf(stdout, "Forked process for pagecycler with PID %d and IDs %s\n", getpid(), IDs);
-        char *path = "/home/marcus/git/showpage_c/build/pagecycle";
+        char *path = "/home/marcus/git/Showpage/build/pagecycle";
         char *const argv_pagec[] = {path, IDs, NULL};
         execvp(path, argv_pagec);
     }
@@ -145,8 +150,6 @@ int main(int argc, char *argv[])
     pid_chrm = fork_chrm();
     if(pid_chrm < 0)
             goto term_routine;
-
-    /* TODO: Add pagecycling functionality and spawn the cycler as a child process(preferably after pages have been opened)*/
 
     /*Wait till chromix server connects so that the open command of chromix-too does not fail*/
     {

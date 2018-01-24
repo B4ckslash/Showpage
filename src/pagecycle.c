@@ -16,6 +16,8 @@ ptr init_plist(char *arg)
 {
     int arr_size = 0;
     char *id;
+    char *arg_cp = malloc(sizeof(arg));
+    strcpy(arg_cp, arg);
     /*calling strtok twice, once to get the necessary array size and once to populate the array*/
     id = strtok(arg, ",");
     while(id != NULL){
@@ -28,7 +30,7 @@ ptr init_plist(char *arg)
 
     int ids[arr_size];
     memset(ids, 0, arr_size*sizeof(int));
-    id = strtok(arg, ",");
+    id = strtok(arg_cp, ",");
     int i = 0;
     while(id != NULL){
         ids[i] = atoi(id);
@@ -37,7 +39,7 @@ ptr init_plist(char *arg)
     }
 
     List *start = malloc(sizeof(List));
-    i = 0;
+    i = 1;
     start->ID = ids[0];
     List *cur = start;
     while(i <= arr_size){
@@ -48,10 +50,11 @@ ptr init_plist(char *arg)
             cur->ID = ids[i];
         }else{
             cur->next = start;
-            start ->prev = cur;
+            start->prev = cur;
         }
         i++;
     }
+    free(arg_cp);
     return start;
 }
 
@@ -68,10 +71,11 @@ void free_list(ptr list)
 
 void cycle(ptr node)
 {
-    FILE *fp = popen("xargs chromix-too focus", "w");
+    FILE *fp = popen("xargs chromix-too focus \0", "w\0");
     while(running){
-        fprintf(fp, "%d", node->ID);
-        fprintf(stdout, "Focussing %d\n", node->ID);
+        fprintf(fp, "%d ", node->ID);
+        fprintf(stdout, "Focusing %d\n", node->ID);
+        node = node->next;
         sleep(30);
     }
     pclose(fp);
@@ -89,11 +93,13 @@ int main(int argc, char *argv[])
         perror("Could not register SIGTERM handler");
         return 1;
     }
+
     ptr strtPtr;
     if(argc != 2 && argc != 4){
         fprintf(stdout, "Usage: %s [-o old Tab IDs] new Tab IDs (Tab IDs are to be formatted as a \
             comma separated string)\n", argv[0]);
     }else if (argc == 4){
+        fprintf(stdout, "showpage removing old tabs\n");
         static char *old_tid;
         for(int i = 0; i < argc; i++){
             if(strcmp(argv[i], "-o") == 0){
@@ -106,7 +112,7 @@ int main(int argc, char *argv[])
 
         static char *id;
         id = strtok(old_tid, ",");
-        FILE *pipe = popen("xargs chromix-too rm\0", "w");
+        FILE *pipe = popen("xargs chromix-too rm \0", "w\0");
         while(id != NULL){
             fprintf(pipe,"%s", id);
             id = strtok(NULL, ",");
@@ -114,9 +120,10 @@ int main(int argc, char *argv[])
         pclose(pipe);
         strtPtr = init_plist(argv[3]);
     }else{
-        strtPtr = init_plist(argv[2]);
+        fprintf(stdout, "Initializing pagelist with %s\n", argv[1]);
+        strtPtr = init_plist(argv[1]);
     }
-    
+
     if(strtPtr == NULL){
         fprintf(stderr, "Could not initialize page list");
         return 1;
