@@ -3,5 +3,10 @@
   "directory": "/home/marcus/git/showpage_c/src",
   "command": "/usr/bin/cc  -I/home/marcus/git/showpage_c/lib    -o CMakeFiles/ShowPage.dir/showpage.c.o   -c /home/marcus/git/showpage_c/src/showpage.c",
   "file": "/home/marcus/git/showpage_c/src/showpage.c"
+},
+{
+  "directory": "/home/marcus/git/showpage_c/src",
+  "command": "/usr/bin/cc  -I/home/marcus/git/showpage_c/lib    -o CMakeFiles/pagecycle.dir/pagecycle.c.o   -c /home/marcus/git/showpage_c/src/pagecycle.c",
+  "file": "/home/marcus/git/showpage_c/src/pagecycle.c"
 }
 ]
