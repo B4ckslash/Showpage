@@ -24,7 +24,7 @@ int read_xml()
     int ret;
 
     char *home_path = getenv("HOME");
-    char *pxml_path = malloc(sizeof(home_path)*2);
+    char *pxml_path = malloc(strlen(home_path)*2);
     strcpy(pxml_path, home_path);
     strcat(pxml_path, "/pages.xml\0");
 
@@ -79,7 +79,7 @@ pid_t fork_cserver(int pipe[])
             return -1;
         }
 
-        char *cserver_path ="/usr/local/bin/chromix-too-server";
+        char *cserver_path ="/usr/bin/chromix-too-server";
         char *const argv_cserver[] = {cserver_path, NULL};
         execv(cserver_path, argv_cserver);
     }
@@ -109,6 +109,7 @@ pid_t fork_pagec()
         fprintf(stdout, "Removed all chrome:// URLs\n");
     FILE *fp = popen("chromix-too tid", "r");
     char IDs[50];
+    memset(IDs, 0, sizeof(IDs));
     char buf[3];
     while(fgets(buf, sizeof(buf), fp) != NULL){
         char *pos;
@@ -116,7 +117,7 @@ pid_t fork_pagec()
             *pos = '\0';
         strcat(IDs, buf);
         strcat(IDs, ",\0");
-        /*memset(buf, 0, sizeof(buf));*/
+        memset(buf, 0, sizeof(buf));
     }
     pclose(fp);
 
@@ -150,7 +151,10 @@ int main(int argc, char *argv[])
     pid_t pid_pagec;
     /*declare pipe file descriptor for communication between child and parent */
     int pipefd[2];
-    pipe(pipefd);
+    if(pipe(pipefd)){
+        perror("Failed to open pipe");
+        goto term_routine;
+    }
 
     pid_cserver = fork_cserver(pipefd);
     if(pid_cserver < 0)
