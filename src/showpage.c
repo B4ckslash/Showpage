@@ -23,7 +23,12 @@ int read_xml()
     xmlTextReaderPtr reader;
     int ret;
 
-    reader = xmlNewTextReaderFilename("/home/marcus/pages.xml");
+    char *home_path = getenv("HOME");
+    char *pxml_path = malloc(sizeof(home_path)*2);
+    strcpy(pxml_path, home_path);
+    strcat(pxml_path, "/pages.xml\0");
+
+    reader = xmlNewTextReaderFilename(pxml_path);
 
     if (reader == NULL) {
         fprintf(stderr, "Cannot open document \n");
@@ -36,6 +41,7 @@ int read_xml()
         ret = xmlTextReaderRead(reader);
     }
     pclose(fp);
+    free(pxml_path);
     return 0;
 }
 
@@ -99,6 +105,8 @@ pid_t fork_chrm()
 pid_t fork_pagec()
 {
     pid_t pid;
+    if(!system("chromix-too rm \"chrome://\""))
+        fprintf(stdout, "Removed all chrome:// URLs");
     FILE *fp = popen("chromix-too tid", "r");
     char IDs[50];
     char buf[3];
@@ -117,7 +125,14 @@ pid_t fork_pagec()
         return 1;
     }else if(pid == 0){
         fprintf(stdout, "Forked process for pagecycler with PID %d and IDs %s\n", getpid(), IDs);
-        char *path = "/home/marcus/git/Showpage/build/pagecycle";
+        char cwd[PATH_MAX];
+        if(getcwd(cwd, sizeof(cwd)) != NULL){
+            fprintf(stdout, "CWD: %s\n", cwd);
+        } else {
+            perror("cwd error");
+            return 1;
+        }
+        char *path = "build/pagecycle";
         char *const argv_pagec[] = {path, IDs, NULL};
         execvp(path, argv_pagec);
     }

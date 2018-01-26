@@ -15,8 +15,9 @@ int running;
 ptr init_plist(char *arg)
 {
     int arr_size = 0;
+    size_t arglen = strlen(arg);
     char *id;
-    char *arg_cp = malloc(sizeof(arg));
+    char *arg_cp = malloc(arglen);
     strcpy(arg_cp, arg);
     /*calling strtok twice, once to get the necessary array size and once to populate the array*/
     id = strtok(arg, ",");
@@ -71,14 +72,15 @@ void free_list(ptr list)
 
 void cycle(ptr node)
 {
-    FILE *fp = popen("xargs chromix-too focus \0", "w\0");
     while(running){
+        FILE *fp = popen("xargs chromix-too focus \0", "w\0");
         fprintf(fp, "%d ", node->ID);
         fprintf(stdout, "Focusing %d\n", node->ID);
         node = node->next;
+        pclose(fp);
+        system("chromix-too reload -active\0");
         sleep(30);
     }
-    pclose(fp);
 }
 
 void term_handle(int sig)
@@ -112,15 +114,15 @@ int main(int argc, char *argv[])
 
         static char *id;
         id = strtok(old_tid, ",");
-        FILE *pipe = popen("xargs chromix-too rm \0", "w\0");
         while(id != NULL){
+            FILE *pipe = popen("xargs chromix-too rm \0", "w\0");
             fprintf(pipe,"%s", id);
             id = strtok(NULL, ",");
+            pclose(pipe);
         }
-        pclose(pipe);
         strtPtr = init_plist(argv[3]);
     }else{
-        fprintf(stdout, "Initializing pagelist with %s\n", argv[1]);
+        fprintf(stdout, "Initializing pagelist with IDs %s\n", argv[1]);
         strtPtr = init_plist(argv[1]);
     }
 

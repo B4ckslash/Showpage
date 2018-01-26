@@ -1,12 +1,12 @@
 [
 {
   "directory": "/home/marcus/git/Showpage/src",
-  "command": "/usr/bin/cc  -I/home/marcus/git/Showpage/lib    -o CMakeFiles/ShowPage.dir/showpage.c.o   -c /home/marcus/git/Showpage/src/showpage.c",
+  "command": "/usr/bin/cc  -I/home/marcus/git/Showpage/lib  -O2 -g -DNDEBUG   -o CMakeFiles/ShowPage.dir/showpage.c.o   -c /home/marcus/git/Showpage/src/showpage.c",
   "file": "/home/marcus/git/Showpage/src/showpage.c"
 },
 {
   "directory": "/home/marcus/git/Showpage/src",
-  "command": "/usr/bin/cc  -I/home/marcus/git/Showpage/lib    -o CMakeFiles/pagecycle.dir/pagecycle.c.o   -c /home/marcus/git/Showpage/src/pagecycle.c",
+  "command": "/usr/bin/cc  -I/home/marcus/git/Showpage/lib  -O2 -g -DNDEBUG   -o CMakeFiles/pagecycle.dir/pagecycle.c.o   -c /home/marcus/git/Showpage/src/pagecycle.c",
   "file": "/home/marcus/git/Showpage/src/pagecycle.c"
 }
 ]
