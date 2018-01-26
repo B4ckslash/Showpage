@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <libxml/xmlreader.h>
+#include <libxml2/libxml/xmlreader.h>
 #include "ShowPageConf.h"
 #include <unistd.h>
 #include <signal.h>
