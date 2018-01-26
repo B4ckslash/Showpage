@@ -106,7 +106,7 @@ pid_t fork_pagec()
 {
     pid_t pid;
     if(!system("chromix-too rm \"chrome://\""))
-        fprintf(stdout, "Removed all chrome:// URLs");
+        fprintf(stdout, "Removed all chrome:// URLs\n");
     FILE *fp = popen("chromix-too tid", "r");
     char IDs[50];
     char buf[3];
