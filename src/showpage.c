@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <syslog.h>
 
 
 int recvd_sig = 0;
@@ -13,7 +14,7 @@ void openPage(const xmlTextReaderPtr reader, FILE *fp)
 {
     const unsigned char *content = xmlTextReaderReadString(reader);
     if(xmlTextReaderHasValue(reader) && *content != '\n'){
-        fprintf(stdout, "Read %s\n", content);
+        syslog(LOG_INFO, "Read %s\n", content);
         fprintf(fp, "%s ", content);
     }
 }
@@ -31,7 +32,7 @@ int read_xml()
     reader = xmlNewTextReaderFilename(pxml_path);
 
     if (reader == NULL) {
-        fprintf(stderr, "Cannot open document \n");
+        syslog(LOG_ERR, "Cannot open document \n");
         return 1;
     }
     ret = xmlTextReaderRead(reader);
@@ -65,8 +66,8 @@ pid_t fork_cserver(int pipe[])
          * This is so that the opening of URLs can be held off until chromix has
          * established a connection with chromium.
          */
-        fprintf(stdout, "Starting chromix-too-server with PID %d\n", getpid());
-        fprintf(stdout, "Redirecting stdout of process %d to pipe to process %d\n", getpid(), getppid());
+        syslog(LOG_INFO, "Starting chromix-too-server with PID %d\n", getpid());
+        syslog(LOG_INFO, "Redirecting stdout of process %d to pipe to process %d\n", getpid(), getppid());
 
         /*close read end of pipe*/
         if(close(pipe[0]) < 0){
@@ -94,7 +95,7 @@ pid_t fork_chrm()
         perror("Could not fork process for chrome");
         return pid_chrm;
     }else if(pid_chrm == 0){
-        fprintf(stdout, "Forking process for chrome with PID %d\n", getpid());
+       syslog(LOG_INFO, "Forking process for chrome with PID %d\n", getpid());
         char *chrm_path="/usr/bin/chromium-browser";
         char *const argv_chrm[] = {chrm_path, "--kiosk\0", NULL};
         execv(chrm_path, argv_chrm);
@@ -106,7 +107,7 @@ pid_t fork_pagec(const char *old_IDs)
 {
     pid_t pid;
     if(!system("chromix-too rm \"chrome://\""))
-        fprintf(stdout, "Removed all chrome:// URLs\n");
+        syslog(LOG_INFO, "Removed all chrome:// URLs\n");
     FILE *fp = popen("chromix-too tid", "r");
     char IDs[50];
     memset(IDs, 0, sizeof(IDs));
@@ -127,14 +128,7 @@ pid_t fork_pagec(const char *old_IDs)
         perror("Could not fork process for pagecycler");
         return 1;
     }else if(pid == 0){
-        fprintf(stdout, "Forked process for pagecycler with PID %d and IDs %s\n", getpid(), IDs);
-        char cwd[PATH_MAX];
-        if(getcwd(cwd, sizeof(cwd)) != NULL){
-            fprintf(stdout, "CWD: %s\n", cwd);
-        } else {
-            perror("cwd error");
-            return 1;
-        }
+        syslog(LOG_INFO, "Forked process for pagecycler with PID %d and IDs %s\n", getpid(), IDs); 
         char *path = "build/pagecycle";
         char *const argv_pagec[] = {path, IDs, NULL};
         execvp(path, argv_pagec);
@@ -144,6 +138,7 @@ pid_t fork_pagec(const char *old_IDs)
 
 int main(int argc, char *argv[])
 {
+    openlog("showpage", LOG_PID, LOG_LOCAL0);
     if(signal(SIGTERM, signal_handler) == SIG_ERR){
         perror("Failed to register signal handler!\0");
     }
@@ -191,7 +186,7 @@ int main(int argc, char *argv[])
     if(read_xml())
             goto term_routine;
 
-    pid_pagec = fork_pagec();
+    pid_pagec = fork_pagec("");
     if(pid_pagec < 0)
         goto term_routine;
 
@@ -202,19 +197,20 @@ sig_loop:
     switch(recvd_sig){
         case SIGHUP:
             kill(pid_pagec, SIGTERM);
-            pid_pagec = fork_pagec();
+            pid_pagec = fork_pagec("");
             if(pid_pagec < 0)
                 goto term_routine;
             goto sig_loop;
         case SIGTERM:
             goto term_routine;
         default:
-            fprintf(stderr, "Failed to handle signal: signal %d is not supported!", recvd_sig);
+            syslog(LOG_ERR, "Failed to handle signal: signal %d is not supported!", recvd_sig);
     }
 term_routine:
         kill(pid_chrm, SIGTERM);
         kill(pid_cserver, SIGTERM);
         kill(pid_pagec, SIGTERM);
+        closelog();
 
     return 0;
 }

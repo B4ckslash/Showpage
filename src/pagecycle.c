@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <syslog.h>
 
 typedef struct pagelist *ptr;
 typedef struct pagelist{
@@ -75,7 +76,6 @@ void cycle(ptr node)
     while(running){
         FILE *fp = popen("xargs chromix-too focus \0", "w\0");
         fprintf(fp, "%d ", node->ID);
-        fprintf(stdout, "Focusing %d\n", node->ID);
         node = node->next;
         pclose(fp);
         system("chromix-too reload -active\0");
@@ -96,12 +96,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    openlog("pagecycle", LOG_PID, LOG_LOCAL0);
+
     ptr strtPtr;
     if(argc != 2 && argc != 4){
         fprintf(stdout, "Usage: %s [-o old Tab IDs] new Tab IDs (Tab IDs are to be formatted as a \
             comma separated string)\n", argv[0]);
     }else if (argc == 4){
-        fprintf(stdout, "showpage removing old tabs\n");
         static char *old_tid;
         for(int i = 0; i < argc; i++){
             if(strcmp(argv[i], "-o") == 0){
@@ -122,18 +123,19 @@ int main(int argc, char *argv[])
         }
         strtPtr = init_plist(argv[3]);
     }else{
-        fprintf(stdout, "Initializing pagelist with IDs %s\n", argv[1]);
+        syslog(LOG_INFO, "Initializing pagelist with IDs %s\n", argv[1]);
         strtPtr = init_plist(argv[1]);
     }
 
     if(strtPtr == NULL){
-        fprintf(stderr, "Could not initialize page list");
+        syslog(LOG_ERR, "Could not initialize page list");
         return 1;
     }
 
     running = 1;
     cycle(strtPtr);
     free_list(strtPtr);
+    closelog();
 
    return 0;
 }
