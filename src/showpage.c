@@ -102,7 +102,7 @@ pid_t fork_chrm()
     return pid_chrm;
 }
 
-pid_t fork_pagec()
+pid_t fork_pagec(const char *old_IDs)
 {
     pid_t pid;
     if(!system("chromix-too rm \"chrome://\""))
@@ -115,8 +115,10 @@ pid_t fork_pagec()
         char *pos;
         while((pos=strchr(buf, '\n')) != NULL)
             *pos = '\0';
-        strcat(IDs, buf);
-        strcat(IDs, ",\0");
+        if(strstr(old_IDs, buf) == NULL){
+            strcat(IDs, buf);
+            strcat(IDs, ",\0");
+        }
         memset(buf, 0, sizeof(buf));
     }
     pclose(fp);
@@ -193,10 +195,22 @@ int main(int argc, char *argv[])
     if(pid_pagec < 0)
         goto term_routine;
 
+sig_loop:
     while(!recvd_sig){
         sleep(1);
     }
-
+    switch(recvd_sig){
+        case SIGHUP:
+            kill(pid_pagec, SIGTERM);
+            pid_pagec = fork_pagec();
+            if(pid_pagec < 0)
+                goto term_routine;
+            goto sig_loop;
+        case SIGTERM:
+            goto term_routine;
+        default:
+            fprintf(stderr, "Failed to handle signal: signal %d is not supported!", recvd_sig);
+    }
 term_routine:
         kill(pid_chrm, SIGTERM);
         kill(pid_cserver, SIGTERM);
