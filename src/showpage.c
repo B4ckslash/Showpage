@@ -9,6 +9,7 @@
 
 
 int recvd_sig = 0;
+char *cur_IDs;
 
 void openPage(const xmlTextReaderPtr reader, FILE *fp)
 {
@@ -62,7 +63,7 @@ pid_t fork_cserver(int pipe[])
         /*
          * Execution branch of child process for chromix-too-server
          *
-         * The pipe declared earlier is used to redirect stdout of the child process
+         * The pipe param is used to redirect stdout of the child process
          * This is so that the opening of URLs can be held off until chromix has
          * established a connection with chromium.
          */
@@ -128,11 +129,14 @@ pid_t fork_pagec(const char *old_IDs)
         perror("Could not fork process for pagecycler");
         return 1;
     }else if(pid == 0){
-        syslog(LOG_INFO, "Forked process for pagecycler with PID %d and IDs %s\n", getpid(), IDs); 
+        syslog(LOG_INFO, "Forked process for pagecycler with PID %d and IDs %s\n", getpid(), IDs);
         char *path = "build/pagecycle";
-        char *const argv_pagec[] = {path, IDs, NULL};
+        char *const argv_pagec[] = {path, IDs, "-o\n", old_IDs, NULL};
         execvp(path, argv_pagec);
     }
+
+    memset(cur_IDs, 0, sizeof(char)*100);
+    cur_IDs = IDs;
     return pid;
 }
 
@@ -141,7 +145,10 @@ int main(int argc, char *argv[])
     openlog("showpage", LOG_PID, LOG_LOCAL0);
     if(signal(SIGTERM, signal_handler) == SIG_ERR){
         perror("Failed to register signal handler!\0");
+        goto term_routine;
     }
+
+    cur_IDs = malloc(100*sizeof(char));
 
     pid_t pid_cserver;
     pid_t pid_chrm;
@@ -184,7 +191,7 @@ int main(int argc, char *argv[])
     }
 
     if(read_xml())
-            goto term_routine;
+        goto term_routine;
 
     pid_pagec = fork_pagec("");
     if(pid_pagec < 0)
@@ -197,7 +204,9 @@ sig_loop:
     switch(recvd_sig){
         case SIGHUP:
             kill(pid_pagec, SIGTERM);
-            pid_pagec = fork_pagec("");
+            if(read_xml())
+                goto term_routine;
+            pid_pagec = fork_pagec(cur_IDs);
             if(pid_pagec < 0)
                 goto term_routine;
             goto sig_loop;
@@ -205,8 +214,11 @@ sig_loop:
             goto term_routine;
         default:
             syslog(LOG_ERR, "Failed to handle signal: signal %d is not supported!", recvd_sig);
+            goto sig_loop;
     }
 term_routine:
+        memset(cur_IDs, 0, sizeof(char)*100);
+        free(cur_IDs);
         kill(pid_chrm, SIGTERM);
         kill(pid_cserver, SIGTERM);
         kill(pid_pagec, SIGTERM);
