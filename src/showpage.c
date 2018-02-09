@@ -131,7 +131,7 @@ pid_t fork_pagec(const char *old_IDs)
     }else if(pid == 0){
         syslog(LOG_INFO, "Forked process for pagecycler with PID %d and IDs %s\n", getpid(), IDs);
         char *path = "build/pagecycle";
-        char *const argv_pagec[] = {path, IDs, "-o\n", old_IDs, NULL};
+        char *const argv_pagec[] = {path, IDs, NULL};
         execvp(path, argv_pagec);
     }
 
